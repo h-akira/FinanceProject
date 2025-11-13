@@ -1,0 +1,12 @@
+[submodule "FinanceProject_Infra"]
+	path = FinanceProject_Infra
+	url = git@github.com:h-akira/FinanceProject_Infra.git
+[submodule "FinanceProject_CICD"]
+	path = FinanceProject_CICD
+	url = git@github.com:h-akira/FinanceProject_CICD.git
+[submodule "FinanceDashboardProject_Backend"]
+	path = FinanceDashboardProject_Backend
+	url = git@github.com:h-akira/FinanceDashboardProject_Backend.git
+[submodule "FinanceDashboardProject_Frontend"]
+	path = FinanceDashboardProject_Frontend
+	url = git@github.com:h-akira/FinanceDashboardProject_Frontend.git
