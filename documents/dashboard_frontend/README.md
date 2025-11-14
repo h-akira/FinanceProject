@@ -3,227 +3,88 @@
 ## 概要
 
 FinanceDashboardProject_Frontendは、チャート・経済指標ダッシュボードのフロントエンドです。
+シンプルなSPA（Single Page Application）として実装され、認証はBackend（サーバーサイドレンダリング）で管理されます。
 
 ## 技術スタック
 
 - **フレームワーク:** Vue.js 3.0.4
-- **ルーティング:** Vue Router
-- **UIライブラリ:** Bootstrap
-- **ビルドツール:** npm
+- **ルーティング:** Vue Router 4.0.0
+- **UIライブラリ:** Bootstrap 5.3.0
+- **ビルドツール:** Vite 1.0.0
 - **ホスティング:**
   - S3（静的ファイル）
-  - CloudFront（CDN）
+  - CloudFront（CDN + ルーティング）
+
+## アーキテクチャ
+
+### ルーティング構成
+
+CloudFrontで以下のようにルーティングされます：
+
+- `/api/*` → API Gateway（Backend Lambda）
+- `/accounts/*` → API Gateway（Backend Lambda - 認証管理）
+- その他 → S3（Frontend静的ファイル）
+
+### 認証フロー
+
+1. フロントエンドは`/accounts/status`を呼び出して認証状態を確認
+2. 未認証の場合、`/accounts/login`にリダイレクト
+3. ログイン処理はBackendのサーバーサイドレンダリングで実行
+4. ログイン成功後、元のページにリダイレクト
+
+**重要:** 認証UI（ログイン画面等）はフロントエンドに含まれず、Backendで管理されます。
 
 ## 機能一覧
 
-- ユーザー認証UI（サインアップ、ログイン、パスワードリセット）
-- アカウント管理UI（プロフィール表示、パスワード変更、アカウント削除）
 - 金融データダッシュボード
-  - 為替レートチャート
-  - 経済指標表示
-  - 各グラフ・表の表示/非表示切り替え
+  - Market Summary（市場サマリー）
+  - Calendar（経済指標カレンダー）
+  - Exchange（為替レート）
+  - JP225（日経平均）
+  - M2（マネーサプライ）
+- 各チャートの表示/非表示切り替え
+- レスポンシブレイアウト（横配置数の変更）
 
-## 開発環境セットアップ
+## Vue Routerルーティング
 
-### 前提条件
-- Node.js 16.x以上
-- npm 8.x以上
+フロントエンド内のルーティング（`src/main.js`）:
 
-### インストール
+| パス | コンポーネント | 認証 | 説明 |
+|------|--------------|------|------|
+| `/` | Home | 必須 | ダッシュボードホーム |
 
-```bash
-cd FinanceDashboardProject_Frontend
-npm install
-```
-
-### ローカル開発サーバー
-
-```bash
-npm run serve
-```
-
-ブラウザで `http://localhost:8080` にアクセス
-
-### ビルド
-
-```bash
-npm run build
-```
-
-ビルド成果物は `dist/` ディレクトリに生成されます。
-
-## デプロイ手順
-
-### 前提条件
-
-以下がデプロイ済みであること:
-- Infrastructure（CDK）: S3バケット、CloudFront
-- FinanceProject_CICD/dashboard/codebuild-frontend.yaml（CodeBuild）
-
-### 手動デプロイ
-
-```bash
-# ビルド
-npm run build
-
-# S3へアップロード
-AWS_PROFILE=finance aws s3 sync dist/ s3://YOUR_BUCKET_NAME/ --delete
-
-# CloudFront キャッシュクリア
-AWS_PROFILE=finance aws cloudfront create-invalidation \
-  --distribution-id YOUR_DISTRIBUTION_ID \
-  --paths "/*"
-```
-
-### 自動デプロイ（CodeBuild）
-
-GitHubリポジトリへのプッシュで自動デプロイされます。
-
-**処理フロー:**
-1. npm install
-2. npm run build
-3. S3 sync
-4. CloudFront invalidation
-
-## 環境変数
-
-フロントエンドでは以下の環境変数を使用（ビルド時に埋め込み）:
-
-```bash
-# .env.production
-VUE_APP_API_BASE_URL=https://api.dashboard.example.com
-VUE_APP_COGNITO_USER_POOL_ID=ap-northeast-1_XXXXXXXXX
-VUE_APP_COGNITO_APP_CLIENT_ID=XXXXXXXXXXXXXXXXXXXX
-```
-
-## ルーティング
-
-| パス | コンポーネント | 説明 |
-|------|--------------|------|
-| `/` | Home | トップページ |
-| `/login` | Login | ログイン |
-| `/signup` | Signup | ユーザー登録 |
-| `/dashboard` | Dashboard | ダッシュボード（認証必須） |
-| `/profile` | Profile | プロフィール（認証必須） |
+**認証ガード:**
+- 全ルートで`/accounts/status`を呼び出して認証状態を確認
+- 未認証の場合、`/accounts/login?next=<元のパス>`にリダイレクト
+- ログイン後、`next`パラメータで指定されたパスに戻る
 
 ## コンポーネント構成
 
 ```
 src/
 ├── components/
-│   ├── auth/
-│   │   ├── LoginForm.vue
-│   │   └── SignupForm.vue
-│   ├── dashboard/
-│   │   ├── ChartComponent.vue
-│   │   └── DataTable.vue
-│   └── layout/
-│       ├── Header.vue
-│       └── Footer.vue
-├── views/
-│   ├── Home.vue
-│   ├── Login.vue
-│   ├── Signup.vue
-│   ├── Dashboard.vue
-│   └── Profile.vue
-├── router/
-│   └── index.js
-├── store/
-│   └── index.js
-├── services/
-│   ├── api.js
-│   └── auth.js
-├── App.vue
-└── main.js
+│   ├── Calendar.vue        # 経済指標カレンダー
+│   ├── Exchange.vue        # 為替レート
+│   ├── JP225.vue           # 日経平均
+│   ├── M2.vue              # マネーサプライ
+│   ├── MarketSummary.vue   # 市場サマリー
+│   └── Home.vue            # ホームページ（ダッシュボード）
+├── assets/
+│   └── logo.png
+├── App.vue                 # ルートコンポーネント（ナビゲーションバー含む）
+├── main.js                 # エントリーポイント、Vue Router設定
+└── index.css               # グローバルスタイル
 ```
 
-## API連携
+## 認証UI（Backend管理）
 
-### APIクライアント
+以下の認証関連パスはBackendでサーバーサイドレンダリングされます:
 
-```javascript
-// services/api.js
-import axios from 'axios'
+| パス | 説明 |
+|------|------|
+| `/accounts/login` | ログイン画面 |
+| `/accounts/logout` | ログアウト処理 |
+| `/accounts/profile` | プロフィール画面 |
+| `/accounts/status` | 認証状態確認API |
 
-const apiClient = axios.create({
-  baseURL: process.env.VUE_APP_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-// 認証トークンの追加
-apiClient.interceptors.request.use(config => {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
-export default apiClient
-```
-
-### Cognito認証
-
-```javascript
-// services/auth.js
-import {
-  CognitoUserPool,
-  CognitoUser,
-  AuthenticationDetails
-} from 'amazon-cognito-identity-js'
-
-const userPool = new CognitoUserPool({
-  UserPoolId: process.env.VUE_APP_COGNITO_USER_POOL_ID,
-  ClientId: process.env.VUE_APP_COGNITO_APP_CLIENT_ID
-})
-
-export const login = (username, password) => {
-  // ログイン処理
-}
-
-export const signup = (username, password, email) => {
-  // サインアップ処理
-}
-```
-
-## 依存関係
-
-### デプロイ前に必要なもの
-1. Infrastructure（CDK）: S3バケット、CloudFront
-2. Backend（SAM）: API Gateway URL
-3. CodeBuild（Frontend）の作成
-
-### 依存されるもの
-- なし
-
-## トラブルシューティング
-
-### ビルドエラー
-
-**症状:** npm run buildが失敗する
-
-**原因と対処:**
-1. **依存関係エラー:** `npm install` を実行して依存パッケージを再インストール
-2. **環境変数未設定:** `.env.production` ファイルが正しく設定されているか確認
-3. **Node.jsバージョン不一致:** Node.js 16.x以上を使用しているか確認
-
-### デプロイエラー
-
-**症状:** S3 syncまたはCloudFront invalidationが失敗する
-
-**原因と対処:**
-1. **権限不足:** CodeBuild実行ロールにS3/CloudFront権限があるか確認
-2. **バケット名誤り:** S3バケット名が正しいか確認
-3. **DistributionID誤り:** CloudFront Distribution IDが正しいか確認
-
-### 認証エラー
-
-**症状:** ログインやサインアップができない
-
-**原因と対処:**
-1. **Cognito未作成:** Infrastructure（CDK）をデプロイ
-2. **環境変数誤り:** Cognito User Pool IDやApp Client IDが正しいか確認
-3. **CORS設定:** API GatewayでCORS設定が正しいか確認
-4. **ネットワークエラー:** ブラウザの開発者ツールでネットワークエラーを確認
+フロントエンドはこれらのエンドポイントを呼び出すだけで、UI実装は含まれません。
