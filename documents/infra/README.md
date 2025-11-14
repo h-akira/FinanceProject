@@ -1,4 +1,4 @@
-# FinanceProject_Infra 詳細設計
+# FinanceProject_Infra 基本設計
 
 ## 概要
 

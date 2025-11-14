@@ -1,4 +1,4 @@
-# FinanceProject_CICD 詳細設計
+# FinanceProject_CICD 基本設計
 
 ## 概要
 

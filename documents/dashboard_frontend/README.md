@@ -1,4 +1,4 @@
-# FinanceDashboardProject_Frontend 詳細設計
+# FinanceDashboardProject_Frontend 基本設計
 
 ## 概要
 
