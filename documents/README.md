@@ -11,24 +11,24 @@ Finance Projectは、個人向け財務管理を目的としたWebアプリケ�
 
 ## 2. リポジトリ構成
 
-本プロジェクトは以下のリポジトリで構成されます：
+本プロジェクトは以下のコンポーネント（リポジトリ）で構成されます：
 
-### 2.1 FinanceProject_Infra
+### 2.1 FinanceProject_Infra（インフラコンポーネント）
 - **役割:** 全サブシステムのインフラをAWS CDKで管理
 - **構成:** 単一リポジトリで、common/およびサブシステムごとのスタックで管理
 - **詳細:** [infra/README.md](infra/README.md)
 
-### 2.2 FinanceProject_CICD
+### 2.2 FinanceProject_CICD（CI/CDコンポーネント）
 - **役割:** CI/CDパイプライン（CodeBuild）の管理
 - **構成:** CloudFormationで独立管理
 - **詳細:** [cicd/README.md](cicd/README.md)
 
-### 2.3 FinanceDashboardProject_Backend
+### 2.3 FinanceDashboardProject_Backend（Backendコンポーネント）
 - **役割:** チャート・経済指標ダッシュボードのバックエンド
 - **構成:** AWS SAMでLambda + API Gatewayを管理
 - **詳細:** [dashboard_backend/README.md](dashboard_backend/README.md)
 
-### 2.4 FinanceDashboardProject_Frontend
+### 2.4 FinanceDashboardProject_Frontend（Frontendコンポーネント）
 - **役割:** チャート・経済指標ダッシュボードのフロントエンド
 - **構成:** Vue.js + Bootstrap
 - **詳細:** [dashboard_frontend/README.md](dashboard_frontend/README.md)
@@ -89,12 +89,3 @@ Finance Projectは、個人向け財務管理を目的としたWebアプリケ�
 - WAMBDA設定（デバッグモード、認証バイパス、ログレベル等のデプロイ時初期値）
 
 **詳細:** [parameters.md](parameters.md)
-
-## 8. 各コンポーネント詳細
-
-各コンポーネントのデプロイ手順、依存関係、セキュリティ設定については、以下を参照してください：
-
-- **インフラ構築:** [infra/README.md](infra/README.md)
-- **CI/CD構築:** [cicd/README.md](cicd/README.md)
-- **Backend:** [dashboard_backend/README.md](dashboard_backend/README.md)
-- **Frontend:** [dashboard_frontend/README.md](dashboard_frontend/README.md)
