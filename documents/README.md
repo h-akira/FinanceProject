@@ -79,14 +79,14 @@ Finance Projectは、個人向け財務管理を目的としたWebアプリケ�
 
 ## 7. パラメータ管理
 
-コンポーネント間で共有される設定値は、AWS Systems Manager Parameter Storeで一元管理されます。
+プロジェクトの設定値は、AWS Systems Manager Parameter Storeで一元管理されます。
 
 **管理対象:**
-- Cognito User Pool ID、App Client ID
-- DynamoDB Table名
-- API Gateway URL
-- S3バケット名、CloudFront Distribution ID
+- Cognito User Pool情報（User Pool ID、Client ID、Client Secret）
 - ACM証明書ARN
+- DynamoDB Table名
+- S3バケット名
+- WAMBDA設定（デバッグモード、認証バイパス、ログレベル等のデプロイ時初期値）
 
 **詳細:** [parameters.md](parameters.md)
 
