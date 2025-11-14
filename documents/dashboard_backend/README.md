@@ -2,144 +2,101 @@
 
 ## 概要
 
-FinanceDashboardProject_Backendは、チャート・経済指標ダッシュボードのバックエンドAPIです。
+FinanceDashboardProject_Backendは、チャート・経済指標ダッシュボードのバックエンドです。
+WAMBDAフレームワークを使用し、認証UIのサーバーサイドレンダリングとREST APIの両方を提供します。
 
 ## 技術スタック
 
-- **フレームワーク:** WAMBDA（独自フレームワーク）
+- **フレームワーク:** WAMBDA（独自Pythonフレームワーク、Django風）
 - **言語:** Python 3.13
-- **デプロイ:** AWS SAM
+- **デプロイツール:** AWS SAM
 - **インフラ:**
-  - Lambda関数
-  - API Gateway
+  - Lambda関数（単一関数）
+  - API Gateway（Regional）
+  - CloudWatch Logs
+
+## アーキテクチャ
+
+### WAMBDAフレームワーク
+
+WAMBDAはLambda上で動作するDjango風のWebフレームワークです。
+
+**詳細:** https://github.com/h-akira/wambda
+
+### 環境変数
+
+以下の環境変数が使用されます（SAMテンプレートのParametersで定義）:
+
+- `WAMBDA_DEBUG` - デバッグモード
+- `WAMBDA_USE_MOCK` - モックデータ使用
+- `WAMBDA_NO_AUTH` - 認証バイパス
+- `WAMBDA_DENY_SIGNUP` - サインアップ抑制
+- `WAMBDA_DENY_LOGIN` - ログイン抑制
+- `WAMBDA_LOG_LEVEL` - ログレベル
+- `DYNAMODB_TABLE` - DynamoDBテーブル名
 
 ## 機能一覧
 
-- ユーザー認証（サインアップ、ログイン、パスワードリセット）
-- アカウント管理（プロフィール表示、パスワード変更、アカウント削除）
-- 金融データダッシュボード（為替レート、経済指標等）
+### 認証機能（サーバーサイドレンダリング）
 
-## デプロイ手順
+`/accounts/*` パスで提供される認証UI：
+- ログイン画面（`/accounts/login`）
+- サインアップ画面（`/accounts/signup`）
+- メール確認画面（`/accounts/verify`）
+- パスワード変更画面（`/accounts/change-password`）
+- パスワードリセット画面（`/accounts/forgot-password`, `/accounts/reset-password`）
+- プロフィール画面（`/accounts/profile`）
+- アカウント削除画面（`/accounts/delete-account`）
+- ログアウト処理（`/accounts/logout`）
+- 認証状態確認API（`/accounts/status`）
 
-### 前提条件
+### REST API
 
-以下がデプロイ済みであること:
-- FinanceProject_CICD/dashboard/codebuild-backend.yaml（CodeBuild）
-- SSMパラメータの設定
+`/api/*` パスで提供されるJSON API：
+- `/api/hello` - サンプルAPI
 
-### SSMパラメータ
 
-以下のパラメータが必要:
+## ディレクトリ構成
 
-```bash
-# Cognito User Pool ID
-AWS_PROFILE=finance aws ssm put-parameter \
-  --name "/finance/dashboard/cognito_user_pool_id" \
-  --value "ap-northeast-1_XXXXXXXXX" \
-  --type String
-
-# Cognito App Client ID
-AWS_PROFILE=finance aws ssm put-parameter \
-  --name "/finance/dashboard/cognito_app_client_id" \
-  --value "XXXXXXXXXXXXXXXXXXXX" \
-  --type String
-
-# DynamoDB Table名
-AWS_PROFILE=finance aws ssm put-parameter \
-  --name "/finance/dashboard/dynamodb_table_name" \
-  --value "finance-dashboard-table" \
-  --type String
+```
+FinanceDashboardProject_Backend/
+├── template.yaml           # SAMテンプレート
+├── samconfig.toml          # SAM設定
+├── buildspec.yml           # CodeBuild設定
+└── Lambda/
+    ├── lambda_function.py  # Lambda エントリーポイント
+    ├── requirements.txt    # Python依存関係
+    ├── project/
+    │   ├── settings.py     # WAMBDA設定
+    │   ├── urls.py         # ルートURLパターン
+    │   └── views.py        # ホームビュー
+    ├── accounts/
+    │   ├── urls.py         # 認証URLパターン
+    │   ├── views.py        # 認証ビュー
+    │   └── forms.py        # 認証フォーム
+    ├── api/
+    │   ├── urls.py         # API URLパターン
+    │   └── views.py        # API ビュー
+    ├── templates/          # HTMLテンプレート
+    │   ├── base.html
+    │   └── accounts/
+    │       ├── login.html
+    │       ├── signup.html
+    │       └── ...
+    └── mock/
+        ├── ssm.py          # SSMモック
+        └── dynamodb.py     # DynamoDBモック
 ```
 
-### 手動デプロイ
+## URLルーティング
 
-```bash
-cd FinanceDashboardProject_Backend
+WAMBDAフレームワークのルーティング構成:
 
-# ビルド
-sam build
+- `/accounts/*` - 認証関連（accounts appにルーティング）
+- `/api/*` - REST API（api appにルーティング）
+- `/` - Backend単体テスト用ホームページ（本番環境ではCloudFrontでFrontendにルーティング）
 
-# デプロイ
-AWS_PROFILE=finance sam deploy \
-  --stack-name stack-finance-dashboard-backend \
-  --capabilities CAPABILITY_IAM \
-  --resolve-s3
-```
+## CloudFormation Outputs
 
-### 自動デプロイ（CodeBuild）
-
-GitHubリポジトリへのプッシュで自動デプロイされます。
-
-**処理フロー:**
-1. SSMパラメータストアから環境変数取得（WAMBDA_*, DYNAMODB_TABLE）
-2. SAM build
-3. SAM deploy
-
-## CloudFormation Exports
-
-以下の値をエクスポート（CDKで参照）:
-
-```yaml
-Outputs:
-  ApiGatewayUrl:
-    Description: API Gateway URL
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-    Export:
-      Name: !Sub "${AWS::StackName}-ApiGatewayUrl"
-```
-
-## 依存関係
-
-### デプロイ前に必要なもの
-- CodeBuild（Backend）の作成
-- SSMパラメータの設定
-
-### デプロイ後に必要なもの
-1. **Infrastructure（CDK）のデプロイ**
-   - Cognito User Pool
-   - DynamoDB Table
-2. **Backend再デプロイ**
-   - Cognito/DynamoDB作成後、正常動作させるため
-
-**注意:**
-- 初回デプロイ時はCognito/DynamoDBがないため正常動作しない
-- CDKデプロイ後に再デプロイすることで正常動作する
-- コード変更は不要（SSMパラメータストアから自動取得）
-
-## API エンドポイント
-
-### 認証関連
-- `POST /auth/signup` - ユーザー登録
-- `POST /auth/login` - ログイン
-- `POST /auth/logout` - ログアウト
-- `POST /auth/password-reset` - パスワードリセット
-
-### アカウント管理
-- `GET /accounts/profile` - プロフィール取得
-- `PUT /accounts/profile` - プロフィール更新
-- `PUT /accounts/password` - パスワード変更
-- `DELETE /accounts` - アカウント削除
-
-### 金融データ
-- `GET /dashboard/data` - ダッシュボードデータ取得
-
-## トラブルシューティング
-
-### デプロイエラー
-
-**症状:** SAM deployが失敗する
-
-**原因と対処:**
-1. **権限不足:** CodeBuild実行ロールの権限を確認
-2. **SSMパラメータ未設定:** 必要なパラメータがすべて設定されているか確認
-3. **スタック名重複:** 既存のスタックと名前が重複していないか確認
-
-### ランタイムエラー
-
-**症状:** Lambda関数が正常に動作しない
-
-**原因と対処:**
-1. **Cognito未作成:** Infrastructure（CDK）をデプロイ
-2. **DynamoDB未作成:** Infrastructure（CDK）をデプロイ
-3. **環境変数未設定:** SSMパラメータが正しく設定されているか確認
-4. **権限不足:** Lambda実行ロールがCognito/DynamoDBにアクセスできるか確認
+SAMデプロイ後、API Gateway エンドポイントURLがCloudFormation Exportsとして出力されます。
+この値はCDK（Infrastructure）でCloudFrontのオリジンとして参照されます。
