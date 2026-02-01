@@ -60,6 +60,8 @@ CloudFrontで以下のようにルーティングされます：
 
 ## コンポーネント構成
 
+各コンポーネントの詳細設計は[components.md](./components.md)を参照してください。
+
 ```
 src/
 ├── components/
